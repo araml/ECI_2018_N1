@@ -1,17 +1,25 @@
 #include <windows.h>
+#include <windowsx.h>
+#include <d3d11.h>
+#include <d3dx11.h>
 #include <iostream>
+
+#pragma comment (lib, "d3d11.lib")
+#pragma comment (lib, "d3dx11.lib")
+#pragma comment (lib, "d3dx10.lib")
 
 LRESULT CALLBACK window_proc(HWND hWnd,
     UINT message,
     WPARAM wParam,
     LPARAM lParam);
 
+IDXGISwapChain *swapchain;             // the pointer to the swap chain interface
+ID3D11Device *dev;                     // the pointer to our Direct3D device interface
+ID3D11DeviceContext *devcon;           // the pointer to our Direct3D device context
 
 class window {
 public:
     window(int width, int height, bool fullscreen) {
-        HWND hWnd;
-        WNDCLASSEX wc;
         ZeroMemory(&wc, sizeof(WNDCLASSEX));
 
         wc.cbSize = sizeof(WNDCLASSEX);
@@ -27,13 +35,21 @@ public:
         RECT client_size{0, 0, width, height };
         AdjustWindowRect(&client_size, WS_OVERLAPPEDWINDOW, false);
 
-        hWnd = CreateWindow("ECI2018", "ECI 2018", WS_OVERLAPPEDWINDOW,
-                            2500, 300, 
-                            client_size.right - client_size.left, 
-                            client_size.bottom - client_size.top,
-                            nullptr, nullptr, nullptr, nullptr);
-        ShowWindow(hWnd, SW_SHOW);
+        m_window = CreateWindow("ECI2018", "ECI 2018", WS_OVERLAPPEDWINDOW,
+                                2500, 300, 
+                                client_size.right - client_size.left, 
+                                client_size.bottom - client_size.top,
+                                nullptr, nullptr, nullptr, nullptr);
+        ShowWindow(m_window, SW_SHOW);
     }
+
+    ~window() {
+        CloseWindow(m_window);
+    }
+
+private:
+    HWND m_window;
+    WNDCLASSEX wc;
 };
 
 bool process_events() {
