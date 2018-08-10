@@ -7,7 +7,7 @@ class window {
 public:
     window(int width, int height, bool fullscreen);
     ~window();
-
+    void* native_window() { return (void*)m_window;  }
 private:
     HWND m_window;
     WNDCLASSEX wc;
