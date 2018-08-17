@@ -16,7 +16,8 @@ LRESULT CALLBACK window_proc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
     return DefWindowProc(hWnd, message, wParam, lParam);
 }
 
-window::window(int width, int height, bool fullscreen) {
+window::window(int width, int height, bool fullscreen) 
+    : m_width(width), m_height(height) {
     ZeroMemory(&wc, sizeof(WNDCLASSEX));
 
     wc.cbSize = sizeof(WNDCLASSEX);
