@@ -56,8 +56,8 @@ void renderer::init_pipeline() {
 
     check_err(D3DX11CompileFromFile(shader_path.c_str(), 0, 0, "v_shader", "vs_4_0", 0, 0, 0, &vertex_buffer, 0, 0));
     check_err(D3DX11CompileFromFile(shader_path.c_str(), 0, 0, "p_shader", "ps_4_0", 0, 0, 0, &pixel_buffer, 0, 0));
-    dev->CreateVertexShader(vertex_buffer->GetBufferPointer(), vertex_buffer->GetBufferSize(), NULL, &vertex_shader);
-    dev->CreatePixelShader(pixel_buffer->GetBufferPointer(), pixel_buffer->GetBufferSize(), NULL, &pixel_shader);
+    check_err(dev->CreateVertexShader(vertex_buffer->GetBufferPointer(), vertex_buffer->GetBufferSize(), NULL, &vertex_shader));
+    check_err(dev->CreatePixelShader(pixel_buffer->GetBufferPointer(), pixel_buffer->GetBufferSize(), NULL, &pixel_shader));
     devcon->VSSetShader(vertex_shader, 0, 0);
     devcon->PSSetShader(pixel_shader, 0, 0);
 
@@ -66,7 +66,7 @@ void renderer::init_pipeline() {
         { "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 },
     };
 
-    dev->CreateInputLayout(ied, 2, vertex_buffer->GetBufferPointer(), vertex_buffer->GetBufferSize(), &layout);
+    check_err(dev->CreateInputLayout(ied, 2, vertex_buffer->GetBufferPointer(), vertex_buffer->GetBufferSize(), &layout));
     devcon->IASetInputLayout(layout);
 }
 
@@ -112,7 +112,7 @@ void renderer::clear() {
 
 void renderer::render() {
     UINT stride = sizeof(vertex);
-    UINT offset;
+    UINT offset = 0;
     devcon->IASetVertexBuffers(0, 1, &video_buffer, &stride, &offset);
     devcon->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
     devcon->Draw(3, 0);

@@ -4,5 +4,5 @@
 
 struct vertex {
     float x, y, z;
-    D3DXCOLOR Color;
+    D3DXCOLOR color;
 };

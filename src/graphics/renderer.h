@@ -12,6 +12,8 @@ template <typename T>
 void check_err(T err) {
     if (err != S_OK) {
         printf("Error!\n");
+    } else {
+        printf("OK!\n");
     }
 }
 
