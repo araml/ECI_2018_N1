@@ -24,7 +24,7 @@ bool process_events() {
 
 // the entry point for any Windows program
 int main() {
-    FreeConsole();
+    //FreeConsole();
     
     window w(500, 400, false);
     renderer r(w);

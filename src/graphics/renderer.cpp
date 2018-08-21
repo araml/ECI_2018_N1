@@ -1,5 +1,6 @@
 #include <vertex.h>
 #include <renderer.h>
+#include <string>
 
 renderer::renderer(window &w) {
     DXGI_SWAP_CHAIN_DESC swap_chain_descriptor;
@@ -42,13 +43,24 @@ renderer::renderer(window &w) {
     create_video_buffer();
 }
 
+
 void renderer::init_shaders() {
-    D3DX11CompileFromFile("shaders.hlsl", 0, 0, "VShader", "vs_4_0", 0, 0, 0, &vertex_buffer, 0, 0);
-    D3DX11CompileFromFile("shaders.hlsl", 0, 0, "PShader", "ps_4_0", 0, 0, 0, &pixel_buffer, 0, 0);
+    std::string shader_path = "src/shaders/shaders.hlsl";
+
+    D3DX11CompileFromFile(shader_path.c_str(), 0, 0, "v_shader", "vs_4_0", 0, 0, 0, &vertex_buffer, 0, 0);
+    D3DX11CompileFromFile(shader_path.c_str(), 0, 0, "p_shader", "ps_4_0", 0, 0, 0, &pixel_buffer, 0, 0);
     dev->CreateVertexShader(vertex_buffer->GetBufferPointer(), vertex_buffer->GetBufferSize(), NULL, &vertex_shader);
     dev->CreatePixelShader(pixel_buffer->GetBufferPointer(), pixel_buffer->GetBufferSize(), NULL, &pixel_shader);
     devcon->VSSetShader(vertex_shader, 0, 0);
     devcon->PSSetShader(pixel_shader, 0, 0);
+
+    D3D11_INPUT_ELEMENT_DESC ied[] = {
+        { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+        { "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+    };
+
+    dev->CreateInputLayout(ied, 2, vertex_buffer->GetBufferPointer(), vertex_buffer->GetBufferSize(), &layout);
+    devcon->IASetInputLayout(layout);
 }
 
 void renderer::create_video_buffer() {
@@ -63,24 +75,15 @@ void renderer::create_video_buffer() {
     dev->CreateBuffer(&buffer_descriptor, nullptr, &video_buffer);
 
     vertex vertices[] = {
-        { 0.f, 0.5f, 0.f, D3DXCOLOR(1.0f, 0.0f, 0.0f, 1.0f) },
-        { 0.45f, -0.5f, 0.f, D3DXCOLOR(0.0f, 1.0f, 0.0f, 1.0f) },
-        { -0.45f, -0.5f, 0.f, D3DXCOLOR(0.0f, 0.0f, 1.0f, 1.0f) }
+        { 0.0f, 0.5f, 0.0f, D3DXCOLOR(1.0f, 0.0f, 0.0f, 1.0f) },
+        { 0.45f, -0.5, 0.0f, D3DXCOLOR(0.0f, 1.0f, 0.0f, 1.0f) },
+        { -0.45f, -0.5f, 0.0f, D3DXCOLOR(0.0f, 0.0f, 1.0f, 1.0f) }
     };
 
     D3D11_MAPPED_SUBRESOURCE ms;
     devcon->Map(video_buffer, NULL, D3D11_MAP_WRITE_DISCARD, NULL, &ms);
     memcpy(ms.pData, vertices, sizeof(vertices));
     devcon->Unmap(video_buffer, NULL);
-
-    D3D11_INPUT_ELEMENT_DESC ied[] = {
-        { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-        { "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-    };
-
-    dev->CreateInputLayout(ied, 2, vertex_buffer->GetBufferPointer(), vertex_buffer->GetBufferSize(), &layout);
-    devcon->IASetInputLayout(layout);
-
 }
 
 renderer::~renderer() {
@@ -101,7 +104,7 @@ void renderer::render() {
     UINT offset;
     devcon->IASetVertexBuffers(0, 1, &video_buffer, &stride, &offset);
     devcon->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-    devcon->Draw(0, 3);
+    devcon->Draw(3, 0);
 }
 
 void renderer::clear() {
