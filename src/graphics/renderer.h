@@ -8,6 +8,13 @@
 
 #include <window.h>
 
+template <typename T> 
+void check_err(T err) {
+    if (err != S_OK) {
+        printf("Error!\n");
+    }
+}
+
 class renderer {
 public:
     renderer(window &w);
