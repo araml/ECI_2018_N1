@@ -17,7 +17,7 @@ public:
     void clear();
 
 private:
-    void init_shaders();
+    void init_pipeline();
     void create_video_buffer();
 
     IDXGISwapChain *swap_chain;            // Swap chain interface.

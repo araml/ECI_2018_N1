@@ -39,12 +39,12 @@ renderer::renderer(window &w) {
     viewport.Width = static_cast<float>(w.width());
     devcon->RSSetViewports(1, &viewport);
 
-    init_shaders();
+    init_pipeline();
     create_video_buffer();
 }
 
 
-void renderer::init_shaders() {
+void renderer::init_pipeline() {
     std::string shader_path = "src/shaders/shaders.hlsl";
 
     D3DX11CompileFromFile(shader_path.c_str(), 0, 0, "v_shader", "vs_4_0", 0, 0, 0, &vertex_buffer, 0, 0);
@@ -64,6 +64,12 @@ void renderer::init_shaders() {
 }
 
 void renderer::create_video_buffer() {
+    vertex vertices[] = {
+        { 0.0f, 0.5f, 0.0f, D3DXCOLOR(1.0f, 0.0f, 0.0f, 1.0f) },
+        { 0.45f, -0.5, 0.0f, D3DXCOLOR(0.0f, 1.0f, 0.0f, 1.0f) },
+        { -0.45f, -0.5f, 0.0f, D3DXCOLOR(0.0f, 0.0f, 1.0f, 1.0f) }
+    };
+
     D3D11_BUFFER_DESC buffer_descriptor;
     ZeroMemory(&buffer_descriptor, sizeof(buffer_descriptor));
 
@@ -73,12 +79,6 @@ void renderer::create_video_buffer() {
     buffer_descriptor.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
 
     dev->CreateBuffer(&buffer_descriptor, nullptr, &video_buffer);
-
-    vertex vertices[] = {
-        { 0.0f, 0.5f, 0.0f, D3DXCOLOR(1.0f, 0.0f, 0.0f, 1.0f) },
-        { 0.45f, -0.5, 0.0f, D3DXCOLOR(0.0f, 1.0f, 0.0f, 1.0f) },
-        { -0.45f, -0.5f, 0.0f, D3DXCOLOR(0.0f, 0.0f, 1.0f, 1.0f) }
-    };
 
     D3D11_MAPPED_SUBRESOURCE ms;
     devcon->Map(video_buffer, NULL, D3D11_MAP_WRITE_DISCARD, NULL, &ms);
@@ -103,7 +103,7 @@ void renderer::render() {
     UINT stride = sizeof(vertex);
     UINT offset;
     devcon->IASetVertexBuffers(0, 1, &video_buffer, &stride, &offset);
-    devcon->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    devcon->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
     devcon->Draw(3, 0);
 }
 
