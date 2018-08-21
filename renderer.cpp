@@ -1,4 +1,5 @@
-#include "renderer.h"
+#include <vertex.h>
+#include <renderer.h>
 
 renderer::renderer(window &w) {
     DXGI_SWAP_CHAIN_DESC swap_chain_descriptor;
@@ -36,6 +37,50 @@ renderer::renderer(window &w) {
     viewport.Height = static_cast<float>(w.height());
     viewport.Width = static_cast<float>(w.width());
     devcon->RSSetViewports(1, &viewport);
+
+    init_shaders();
+    create_video_buffer();
+}
+
+void renderer::init_shaders() {
+    D3DX11CompileFromFile("shaders.hlsl", 0, 0, "VShader", "vs_4_0", 0, 0, 0, &vertex_buffer, 0, 0);
+    D3DX11CompileFromFile("shaders.hlsl", 0, 0, "PShader", "ps_4_0", 0, 0, 0, &pixel_buffer, 0, 0);
+    dev->CreateVertexShader(vertex_buffer->GetBufferPointer(), vertex_buffer->GetBufferSize(), NULL, &vertex_shader);
+    dev->CreatePixelShader(pixel_buffer->GetBufferPointer(), pixel_buffer->GetBufferSize(), NULL, &pixel_shader);
+    devcon->VSSetShader(vertex_shader, 0, 0);
+    devcon->PSSetShader(pixel_shader, 0, 0);
+}
+
+void renderer::create_video_buffer() {
+    D3D11_BUFFER_DESC buffer_descriptor;
+    ZeroMemory(&buffer_descriptor, sizeof(buffer_descriptor));
+
+    buffer_descriptor.Usage = D3D11_USAGE_DYNAMIC;
+    buffer_descriptor.ByteWidth = sizeof(vertex) * 3;
+    buffer_descriptor.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+    buffer_descriptor.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+
+    dev->CreateBuffer(&buffer_descriptor, nullptr, &video_buffer);
+
+    vertex vertices[] = {
+        { 0.f, 0.5f, 0.f, D3DXCOLOR(1.0f, 0.0f, 0.0f, 1.0f) },
+        { 0.45f, -0.5f, 0.f, D3DXCOLOR(0.0f, 1.0f, 0.0f, 1.0f) },
+        { -0.45f, -0.5f, 0.f, D3DXCOLOR(0.0f, 0.0f, 1.0f, 1.0f) }
+    };
+
+    D3D11_MAPPED_SUBRESOURCE ms;
+    devcon->Map(video_buffer, NULL, D3D11_MAP_WRITE_DISCARD, NULL, &ms);
+    memcpy(ms.pData, vertices, sizeof(vertices));
+    devcon->Unmap(video_buffer, NULL);
+
+    D3D11_INPUT_ELEMENT_DESC ied[] = {
+        { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+        { "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+    };
+
+    dev->CreateInputLayout(ied, 2, vertex_buffer->GetBufferPointer(), vertex_buffer->GetBufferSize(), &layout);
+    devcon->IASetInputLayout(layout);
+
 }
 
 renderer::~renderer() {
@@ -43,11 +88,22 @@ renderer::~renderer() {
     back_buffer->Release();
     dev->Release();
     devcon->Release();
+    vertex_shader->Release();
+    pixel_shader->Release();
 }
 
 void renderer::present() {
-    devcon->ClearRenderTargetView(back_buffer, D3DXCOLOR(0.f, .2f, .4f, 1.f));
     swap_chain->Present(0, 0);
 }
 
-void renderer::clear() {}
+void renderer::render() {
+    UINT stride = sizeof(vertex);
+    UINT offset;
+    devcon->IASetVertexBuffers(0, 1, &video_buffer, &stride, &offset);
+    devcon->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    devcon->Draw(0, 3);
+}
+
+void renderer::clear() {
+    devcon->ClearRenderTargetView(back_buffer, D3DXCOLOR(0.f, .2f, .4f, 1.f));
+}

@@ -1,12 +1,7 @@
-#include <windows.h>
-#include <windowsx.h>
-#include <d3d11.h>
-#include <d3dx11.h>
-#include <d3dx10.h>
 #include <iostream>
 
-#include "window.h"
-#include "renderer.h"
+#include <window.h>
+#include <renderer.h>
 
 #pragma comment (lib, "d3d11.lib")
 #pragma comment (lib, "d3dx11.lib")
@@ -38,7 +33,9 @@ int main() {
     while (true) {
         if (process_events())
             break;
-
+        r.clear(); 
+        // Do rendering stuff
+        r.render();
         r.present();
     }
 

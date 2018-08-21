@@ -1,4 +1,4 @@
-#include "window.h"
+#include <window.h>
 
 // this is the main message handler for the program
 LRESULT CALLBACK window_proc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) {
