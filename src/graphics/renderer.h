@@ -26,8 +26,9 @@ public:
     void clear();
 
 private:
-    void init_pipeline();
+    void init_pipeline(window &w);
     void create_video_buffer();
+    void init_depth_stencil(window &w);
 
     IDXGISwapChain *swap_chain;            // Swap chain interface.
     ID3D11Device *dev;                     // Direct3D device interface.
@@ -38,5 +39,8 @@ private:
     ID3D11VertexShader *vertex_shader;
     ID3D11Buffer *video_buffer;
     ID3D11InputLayout *layout;
+    //Depth stencil
+    ID3D11DepthStencilView *stencil_view;
+    ID3D11Texture2D *stencil_buffer;
 };
 

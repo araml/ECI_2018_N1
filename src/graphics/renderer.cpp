@@ -46,12 +46,12 @@ renderer::renderer(window &w) {
     viewport.Width = static_cast<float>(w.width());
     devcon->RSSetViewports(1, &viewport);
 
-    init_pipeline();
+    init_pipeline(w);
     create_video_buffer();
 }
 
 
-void renderer::init_pipeline() {
+void renderer::init_pipeline(window &w) {
     std::string shader_path = "src/shaders/shaders.hlsl";
 
     check_err(D3DX11CompileFromFile(shader_path.c_str(), 0, 0, "v_shader", "vs_4_0", 0, 0, 0, &vertex_buffer, 0, 0));
@@ -68,6 +68,29 @@ void renderer::init_pipeline() {
 
     check_err(dev->CreateInputLayout(ied, 2, vertex_buffer->GetBufferPointer(), vertex_buffer->GetBufferSize(), &layout));
     devcon->IASetInputLayout(layout);
+
+    init_depth_stencil(w);
+}
+
+void renderer::init_depth_stencil(window &w) {
+    D3D11_TEXTURE2D_DESC stencil_descriptor;
+        
+    stencil_descriptor.Width = w.width();
+    stencil_descriptor.Height = w.height();
+    stencil_descriptor.MipLevels = 1;
+    stencil_descriptor.ArraySize = 1;
+    stencil_descriptor.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+    stencil_descriptor.SampleDesc.Count = 1;
+    stencil_descriptor.SampleDesc.Quality = 1;
+    stencil_descriptor.Usage = D3D11_USAGE_DEFAULT;
+    stencil_descriptor.BindFlags = D3D11_BIND_DEPTH_STENCIL;
+    stencil_descriptor.CPUAccessFlags = 0;
+    stencil_descriptor.MiscFlags = 0;
+    
+    check_err(dev->CreateTexture2D(&stencil_descriptor, nullptr, &stencil_buffer));
+    check_err(dev->CreateDepthStencilView(stencil_buffer, nullptr, &stencil_view));
+
+    devcon->OMSetRenderTargets(1, &back_buffer, stencil_view);
 }
 
 void renderer::create_video_buffer() {
