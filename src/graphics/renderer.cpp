@@ -111,11 +111,6 @@ void renderer::create_video_buffer() {
     check_err(devcon->Map(video_buffer, NULL, D3D11_MAP_WRITE_DISCARD, NULL, &ms));
     memcpy(ms.pData, vertices, sizeof(vertices));
     devcon->Unmap(video_buffer, NULL);
-
-    UINT stride = sizeof(vertex);
-    UINT offset = 0;
-    devcon->IASetVertexBuffers(0, 1, &video_buffer, &stride, &offset);
-    devcon->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 }
 
 renderer::~renderer() {
@@ -136,6 +131,10 @@ void renderer::clear() {
 }
 
 void renderer::render() {
+    UINT stride = sizeof(vertex);
+    UINT offset = 0;
+    devcon->IASetVertexBuffers(0, 1, &video_buffer, &stride, &offset);
+    devcon->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
     devcon->DrawIndexed(6, 0, 0);
 }
 
