@@ -8,8 +8,12 @@ bool process_events() {
     ZeroMemory(&msg, sizeof(MSG));
 
     while (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE)) {
-        if (msg.message == WM_QUIT)
+        if (msg.message == WM_QUIT || msg.message == WM_CLOSE)
             return true;
+        if (msg.message == WM_KEYDOWN || msg.message == WM_KEYUP) {
+            puts("KEY");
+           // handle_key(msg);
+        }
 
         TranslateMessage(&msg);
         DispatchMessage(&msg); 
