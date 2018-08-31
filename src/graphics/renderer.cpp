@@ -2,6 +2,8 @@
 #include <renderer.h>
 #include <string>
 
+constexpr double PI = 3.14;
+
 #pragma comment (lib, "d3d11.lib")
 #pragma comment (lib, "d3dx11.lib")
 #pragma comment (lib, "d3dx10.lib")
@@ -23,7 +25,7 @@ renderer::renderer(window &w) {
 
     D3D11CreateDeviceAndSwapChain(nullptr,
         D3D_DRIVER_TYPE_HARDWARE,
-        nullptr, NULL, nullptr, NULL,
+        nullptr, D3D11_CREATE_DEVICE_DEBUG, nullptr, NULL,
         D3D11_SDK_VERSION,
         &swap_chain_descriptor,
         &swap_chain,
@@ -49,7 +51,6 @@ renderer::renderer(window &w) {
     init_pipeline(w);
     create_video_buffer();
 }
-
 
 void renderer::init_pipeline(window &w) {
     std::string shader_path = "src/shaders/shaders.hlsl";
@@ -81,7 +82,7 @@ void renderer::init_depth_stencil(window &w) {
     stencil_descriptor.ArraySize = 1;
     stencil_descriptor.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
     stencil_descriptor.SampleDesc.Count = 1;
-    stencil_descriptor.SampleDesc.Quality = 1;
+    stencil_descriptor.SampleDesc.Quality = 0;
     stencil_descriptor.Usage = D3D11_USAGE_DEFAULT;
     stencil_descriptor.BindFlags = D3D11_BIND_DEPTH_STENCIL;
     stencil_descriptor.CPUAccessFlags = 0;
@@ -98,18 +99,38 @@ void renderer::create_video_buffer() {
         { -0.5f, -0.5f, 0.0f, D3DXCOLOR(1.0f, 0.0f, 0.0f, 1.0f) },
         { -0.5f,  0.5, 0.0f, D3DXCOLOR(0.0f, 1.0f, 0.0f, 1.0f) },
         {  0.5f,  0.5f, 0.0f, D3DXCOLOR(0.0f, 0.0f, 1.0f, 1.0f) },
-        {  0.5f,  -0.5f, 0.0f, D3DXCOLOR(0.0f, 0.0f, 1.0f, 1.0f) }
+        {  0.5f,  -0.5f, 0.0f, D3DXCOLOR(0.0f, 0.0f, 1.0f, 1.0f) },
+
+        { -0.5f, -0.5f, 1.0f, D3DXCOLOR(0.7f, 0.0f, 0.0f, 1.0f) },
+        { -0.5f,  0.5, 1.0f, D3DXCOLOR(0.0f, 0.7f, 0.0f, 1.0f) },
+        { 0.5f,  0.5f, 1.0f, D3DXCOLOR(0.0f, 0.0f, 0.7f, 1.0f) },
+        { 0.5f,  -0.5f, 1.0f, D3DXCOLOR(0.0f, 0.0f, 0.7f, 1.0f) },
     };
 
     DWORD indices[] = {
-        0, 1, 2,
+        // Front
+        0, 1, 2/*
         0, 2, 3,
+        // Back
+        4, 5, 6,
+        4, 6, 7,
+        // Right side
+        3, 2, 4,
+        3, 4, 7,
+        // Left side
+        0, 1, 5,
+        0, 5, 4,
+        // Top
+
+        // Bottom*/
+
+
     };
 
     D3D11_BUFFER_DESC index_buffer_descriptor;
     ZeroMemory(&index_buffer_descriptor, sizeof(index_buffer_descriptor));
     index_buffer_descriptor.Usage = D3D11_USAGE_DEFAULT;
-    index_buffer_descriptor.ByteWidth = sizeof(DWORD) * 6;
+    index_buffer_descriptor.ByteWidth = sizeof(indices);
     index_buffer_descriptor.BindFlags = D3D11_BIND_INDEX_BUFFER;
     index_buffer_descriptor.CPUAccessFlags = 0;
     index_buffer_descriptor.MiscFlags = 0;
@@ -124,7 +145,7 @@ void renderer::create_video_buffer() {
     ZeroMemory(&buffer_descriptor, sizeof(buffer_descriptor));
 
     buffer_descriptor.Usage = D3D11_USAGE_DYNAMIC;                
-    buffer_descriptor.ByteWidth = sizeof(vertex) * 4;             
+    buffer_descriptor.ByteWidth = sizeof(vertices);             
     buffer_descriptor.BindFlags = D3D11_BIND_VERTEX_BUFFER;     
     buffer_descriptor.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;    
 
@@ -134,6 +155,13 @@ void renderer::create_video_buffer() {
     check_err(devcon->Map(video_buffer, NULL, D3D11_MAP_WRITE_DISCARD, NULL, &ms));
     memcpy(ms.pData, vertices, sizeof(vertices));
     devcon->Unmap(video_buffer, NULL);
+
+    buffer_descriptor.Usage = D3D11_USAGE_DEFAULT;
+    buffer_descriptor.ByteWidth = sizeof(wpv);
+    buffer_descriptor.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+    buffer_descriptor.CPUAccessFlags = 0;
+    check_err(dev->CreateBuffer(&buffer_descriptor, nullptr, &constant_buffer));
+   
 }
 
 renderer::~renderer() {
@@ -154,17 +182,46 @@ void renderer::clear() {
 }
 
 void renderer::render() {
+    update();
+
     UINT stride = sizeof(vertex);
     UINT offset = 0;
     devcon->IASetVertexBuffers(0, 1, &video_buffer, &stride, &offset);
     devcon->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-    devcon->DrawIndexed(6, 0, 0);
+    devcon->DrawIndexed(3, 0, 0);
 }
 
 void renderer::present() {
     swap_chain->Present(0, 0);
 }
 
+#include <iostream>
+using namespace DirectX;
 
+void renderer::update() {
+    rotation += 0.0005f;
+    if (rotation > PI * 2)
+        rotation = 0;
+
+    //Define rotate cube around Y (horizontal) axis
+    DirectX::XMMATRIX rotation_matrix = DirectX::XMMatrixRotationY(rotation);
+
+
+    auto camPosition = XMVectorSet(0.0f, 0.0f, -8.0f, 0.0f);
+    ///////////////**************new**************////////////////////
+    auto camTarget = XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f);
+    auto camUp = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
+
+    //Set the View matrix
+    auto camView = XMMatrixLookAtLH(camPosition, camTarget, camUp);
+    auto camProjection = XMMatrixPerspectiveFovLH(0.4f*3.14f, (float)640 / 480, 1.0f, 1000.0f);
+
+
+
+    wpv buffer;
+    buffer.matrix = rotation_matrix * camView * camProjection;
+    devcon->UpdateSubresource(constant_buffer, 0, nullptr, &buffer, 0, 0);
+    devcon->VSSetConstantBuffers(0, 1, &constant_buffer);
+}
 
 

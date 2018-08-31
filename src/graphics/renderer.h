@@ -7,15 +7,28 @@
 #include <d3dx10.h>
 
 #include <window.h>
+#include <cstdio>
+#include <comdef.h>
+#include <DirectXMath.h>
+
+
+#define check_err(X) t_check_err(X); \
+                     printf("%d\n", __LINE__); 
 
 template <typename T> 
-void check_err(T err) {
+void t_check_err(T err) {
     if (err != S_OK) {
         printf("Error!\n");
+        _com_error error(err);
+        printf("%s", error.ErrorMessage());
     } else {
         printf("OK!\n");
     }
 }
+
+struct wpv {
+    DirectX::XMMATRIX matrix;
+};
 
 class renderer {
 public:
@@ -24,6 +37,7 @@ public:
     void present();
     void render();
     void clear();
+    void update();
 
 private:
     void init_pipeline(window &w);
@@ -42,5 +56,9 @@ private:
     //Depth stencil
     ID3D11DepthStencilView *stencil_view;
     ID3D11Texture2D *stencil_buffer;
+
+    DirectX::XMVECTOR camera; 
+    ID3D11Buffer* constant_buffer;
+    float rotation{ 0.01f };
 };
 
