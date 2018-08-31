@@ -26,7 +26,7 @@ void t_check_err(T err) {
     }
 }
 
-struct wpv {
+struct wvp {
     DirectX::XMMATRIX matrix;
 };
 

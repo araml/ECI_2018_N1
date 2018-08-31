@@ -19,7 +19,7 @@ renderer::renderer(window &w) {
     swap_chain_descriptor.BufferDesc.Height = w.width();
     swap_chain_descriptor.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
     swap_chain_descriptor.OutputWindow = (HWND)w.native_window();
-    swap_chain_descriptor.SampleDesc.Count = 4;
+    swap_chain_descriptor.SampleDesc.Count = 1;
     swap_chain_descriptor.Windowed = true;
     swap_chain_descriptor.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
 
@@ -94,38 +94,44 @@ void renderer::init_depth_stencil(window &w) {
     devcon->OMSetRenderTargets(1, &back_buffer, stencil_view);
 }
 
+int num_vert;
+
 void renderer::create_video_buffer() {
     vertex vertices[] = {
-        { -0.5f, -0.5f, 0.0f, D3DXCOLOR(1.0f, 0.0f, 0.0f, 1.0f) },
-        { -0.5f,  0.5, 0.0f, D3DXCOLOR(0.0f, 1.0f, 0.0f, 1.0f) },
-        {  0.5f,  0.5f, 0.0f, D3DXCOLOR(0.0f, 0.0f, 1.0f, 1.0f) },
-        {  0.5f,  -0.5f, 0.0f, D3DXCOLOR(0.0f, 0.0f, 1.0f, 1.0f) },
+    
+       { -0.5f, -0.5f, -0.5f, D3DXCOLOR(1.0f, 0.0f, 0.0f, 1.0f) },
+        { -0.5f,  0.5, -0.5f, D3DXCOLOR(0.0f, 1.0f, 0.0f, 1.0f) },
+        {  0.5f,  0.5f, -0.5f, D3DXCOLOR(0.0f, 0.0f, 1.0f, 1.0f) },
+        {  0.5f,  -0.5f, -0.5f, D3DXCOLOR(0.0f, 0.0f, 1.0f, 1.0f) },
 
-        { -0.5f, -0.5f, 1.0f, D3DXCOLOR(0.7f, 0.0f, 0.0f, 1.0f) },
-        { -0.5f,  0.5, 1.0f, D3DXCOLOR(0.0f, 0.7f, 0.0f, 1.0f) },
-        { 0.5f,  0.5f, 1.0f, D3DXCOLOR(0.0f, 0.0f, 0.7f, 1.0f) },
-        { 0.5f,  -0.5f, 1.0f, D3DXCOLOR(0.0f, 0.0f, 0.7f, 1.0f) },
+        { -0.5f, -0.5f, .5f, D3DXCOLOR(0.7f, 0.0f, 0.0f, 1.0f) },
+        { -0.5f,  0.5, .5f, D3DXCOLOR(0.0f, 0.7f, 0.0f, 1.0f) },
+        { 0.5f,  0.5f, .5f, D3DXCOLOR(0.0f, 0.0f, 0.7f, 1.0f) },
+        { 0.5f,  -0.5f, .5f, D3DXCOLOR(0.0f, 0.0f, 0.7f, 1.0f) },
+   
     };
 
     DWORD indices[] = {
-        // Front
-        0, 1, 2/*
-        0, 2, 3,
-        // Back
-        4, 5, 6,
-        4, 6, 7,
-        // Right side
-        3, 2, 4,
-        3, 4, 7,
-        // Left side
-        0, 1, 5,
-        0, 5, 4,
-        // Top
+         0, 1, 2,
+         0, 2, 3,
 
-        // Bottom*/
+         5, 0, 4,
+         5, 1, 0,
+         // Right face
+         3, 2, 6,
+         3, 6, 7,
 
+         6, 4, 7,
+         6, 5, 4,
 
+         1, 5, 6,
+         1, 6, 2,
+
+         0, 4, 7,
+         0, 7, 3,
     };
+
+    num_vert = sizeof(indices) / sizeof(DWORD);
 
     D3D11_BUFFER_DESC index_buffer_descriptor;
     ZeroMemory(&index_buffer_descriptor, sizeof(index_buffer_descriptor));
@@ -157,7 +163,7 @@ void renderer::create_video_buffer() {
     devcon->Unmap(video_buffer, NULL);
 
     buffer_descriptor.Usage = D3D11_USAGE_DEFAULT;
-    buffer_descriptor.ByteWidth = sizeof(wpv);
+    buffer_descriptor.ByteWidth = sizeof(wvp);
     buffer_descriptor.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
     buffer_descriptor.CPUAccessFlags = 0;
     check_err(dev->CreateBuffer(&buffer_descriptor, nullptr, &constant_buffer));
@@ -187,8 +193,10 @@ void renderer::render() {
     UINT stride = sizeof(vertex);
     UINT offset = 0;
     devcon->IASetVertexBuffers(0, 1, &video_buffer, &stride, &offset);
-    devcon->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-    devcon->DrawIndexed(3, 0, 0);
+    devcon->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
+    devcon->ClearDepthStencilView(stencil_view, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
+
+    devcon->DrawIndexed(num_vert, 0, 0);
 }
 
 void renderer::present() {
@@ -207,19 +215,19 @@ void renderer::update() {
     DirectX::XMMATRIX rotation_matrix = DirectX::XMMatrixRotationY(rotation);
 
 
-    auto camPosition = XMVectorSet(0.0f, 0.0f, -8.0f, 0.0f);
+    auto eye = XMVectorSet(0.0f, 1.0f, -3.0f, 0.0f);
     ///////////////**************new**************////////////////////
-    auto camTarget = XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f);
-    auto camUp = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
+    auto at = XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f);
+    auto up = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
 
     //Set the View matrix
-    auto camView = XMMatrixLookAtLH(camPosition, camTarget, camUp);
-    auto camProjection = XMMatrixPerspectiveFovLH(0.4f*3.14f, (float)640 / 480, 1.0f, 1000.0f);
+    auto camView = XMMatrixLookAtLH(eye, at, up);
+    auto camProjection = XMMatrixPerspectiveFovLH(XM_PIDIV2, (float)640 / 480, .01f, 100.0f);
 
 
 
-    wpv buffer;
-    buffer.matrix = rotation_matrix * camView * camProjection;
+    wvp buffer;
+    buffer.matrix = XMMatrixTranspose(rotation_matrix * camView * camProjection);
     devcon->UpdateSubresource(constant_buffer, 0, nullptr, &buffer, 0, 0);
     devcon->VSSetConstantBuffers(0, 1, &constant_buffer);
 }
