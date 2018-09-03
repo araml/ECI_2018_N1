@@ -12,18 +12,15 @@
 #include <DirectXMath.h>
 
 
-#define check_err(X) t_check_err(X); \
-                     printf("%d\n", __LINE__); 
+#define check_err(X) t_check_err((X), __LINE__)
 
 template <typename T> 
-void t_check_err(T err) {
+void t_check_err(T err, int line) {
     if (err != S_OK) {
-        printf("Error!\n");
+        printf("Error! at line %d\n", line);
         _com_error error(err);
         printf("%s", error.ErrorMessage());
-    } else {
-        printf("OK!\n");
-    }
+    } 
 }
 
 struct wvp {

@@ -1,6 +1,9 @@
 #include <vertex.h>
 #include <renderer.h>
 #include <string>
+#include <DirectXColors.h>
+#include <iostream>
+using namespace DirectX;
 
 constexpr double PI = 3.14;
 
@@ -44,6 +47,8 @@ renderer::renderer(window &w) {
     ZeroMemory(&viewport, sizeof(D3D11_VIEWPORT));
     viewport.TopLeftX = 0;
     viewport.TopLeftY = 0;
+    viewport.MinDepth = 0.0f;
+    viewport.MaxDepth = 1.0f;
     viewport.Height = static_cast<float>(w.height());
     viewport.Width = static_cast<float>(w.width());
     devcon->RSSetViewports(1, &viewport);
@@ -99,22 +104,22 @@ int num_vert;
 void renderer::create_video_buffer() {
     vertex vertices[] = {
     
-       { -0.5f, -0.5f, -0.5f, D3DXCOLOR(1.0f, 0.0f, 0.0f, 1.0f) },
+       { -0.5f, -0.5f, -0.5f, D3DXCOLOR(0.0f, 0.0f, 1.0f, 1.0f) },
         { -0.5f,  0.5, -0.5f, D3DXCOLOR(0.0f, 1.0f, 0.0f, 1.0f) },
-        {  0.5f,  0.5f, -0.5f, D3DXCOLOR(0.0f, 0.0f, 1.0f, 1.0f) },
-        {  0.5f,  -0.5f, -0.5f, D3DXCOLOR(0.0f, 0.0f, 1.0f, 1.0f) },
+        {  0.5f,  0.5f, -0.5f, D3DXCOLOR(0.0f, 1.f, 1.0f, 1.0f) },
+        {  0.5f,  -0.5f, -0.5f, D3DXCOLOR(1.0f, 0.f, 0.f, 1.0f) },
 
-        { -0.5f, -0.5f, .5f, D3DXCOLOR(0.7f, 0.0f, 0.0f, 1.0f) },
-        { -0.5f,  0.5, .5f, D3DXCOLOR(0.0f, 0.7f, 0.0f, 1.0f) },
-        { 0.5f,  0.5f, .5f, D3DXCOLOR(0.0f, 0.0f, 0.7f, 1.0f) },
-        { 0.5f,  -0.5f, .5f, D3DXCOLOR(0.0f, 0.0f, 0.7f, 1.0f) },
+        { -0.5f, -0.5f, .5f, D3DXCOLOR(1.f, 0.0f, 1.f, 1.0f) },
+        { -0.5f,  0.5, .5f, D3DXCOLOR(1.0f, 1.f, 0.0f, 1.0f) },
+        { 0.5f,  0.5f, .5f, D3DXCOLOR(1.0f, 1.0f, 1.f, 1.0f) },
+        { 0.5f,  -0.5f, .5f, D3DXCOLOR(0.f, 0.f, 0.f, 1.0f) },
    
     };
 
-    DWORD indices[] = {
+    WORD indices[] = {
          0, 1, 2,
          0, 2, 3,
-
+         
          5, 0, 4,
          5, 1, 0,
          // Right face
@@ -129,9 +134,9 @@ void renderer::create_video_buffer() {
 
          0, 4, 7,
          0, 7, 3,
-    };
+   };
 
-    num_vert = sizeof(indices) / sizeof(DWORD);
+    num_vert = sizeof(indices) / sizeof(WORD);
 
     D3D11_BUFFER_DESC index_buffer_descriptor;
     ZeroMemory(&index_buffer_descriptor, sizeof(index_buffer_descriptor));
@@ -145,7 +150,7 @@ void renderer::create_video_buffer() {
     D3D11_SUBRESOURCE_DATA index_data;
     index_data.pSysMem = indices;
     dev->CreateBuffer(&index_buffer_descriptor, &index_data, &index_buffer);
-    devcon->IASetIndexBuffer(index_buffer, DXGI_FORMAT_R32_UINT, 0);
+    devcon->IASetIndexBuffer(index_buffer, DXGI_FORMAT_R16_UINT, 0);
 
     D3D11_BUFFER_DESC buffer_descriptor;
     ZeroMemory(&buffer_descriptor, sizeof(buffer_descriptor));
@@ -184,7 +189,8 @@ renderer::~renderer() {
 }
 
 void renderer::clear() {
-    devcon->ClearRenderTargetView(back_buffer, D3DXCOLOR(0.f, .2f, .4f, 1.f));
+    devcon->ClearRenderTargetView(back_buffer, Colors::MidnightBlue);
+    devcon->ClearDepthStencilView(stencil_view, D3D11_CLEAR_DEPTH , 1.0f, 0);
 }
 
 void renderer::render() {
@@ -193,26 +199,21 @@ void renderer::render() {
     UINT stride = sizeof(vertex);
     UINT offset = 0;
     devcon->IASetVertexBuffers(0, 1, &video_buffer, &stride, &offset);
-    devcon->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
-    devcon->ClearDepthStencilView(stencil_view, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
-
+    devcon->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
     devcon->DrawIndexed(num_vert, 0, 0);
 }
 
 void renderer::present() {
-    swap_chain->Present(0, 0);
+    check_err(swap_chain->Present(0, 0));
 }
 
-#include <iostream>
-using namespace DirectX;
 
 void renderer::update() {
-    rotation += 0.0005f;
+    rotation += 0.005f;
     if (rotation > PI * 2)
         rotation = 0;
 
-    //Define rotate cube around Y (horizontal) axis
-    DirectX::XMMATRIX rotation_matrix = DirectX::XMMatrixRotationY(rotation);
+    DirectX::XMMATRIX world = DirectX::XMMatrixRotationY(rotation);
 
 
     auto eye = XMVectorSet(0.0f, 1.0f, -3.0f, 0.0f);
@@ -221,13 +222,13 @@ void renderer::update() {
     auto up = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
 
     //Set the View matrix
-    auto camView = XMMatrixLookAtLH(eye, at, up);
-    auto camProjection = XMMatrixPerspectiveFovLH(XM_PIDIV2, (float)640 / 480, .01f, 100.0f);
+    auto camera = XMMatrixLookAtLH(eye, at, up);
+    auto projection = XMMatrixPerspectiveFovLH(XM_PIDIV2, (float)640 / 480, .01f, 100.0f);
 
 
 
     wvp buffer;
-    buffer.matrix = XMMatrixTranspose(rotation_matrix * camView * camProjection);
+    buffer.matrix = XMMatrixTranspose(world * camera * projection);
     devcon->UpdateSubresource(constant_buffer, 0, nullptr, &buffer, 0, 0);
     devcon->VSSetConstantBuffers(0, 1, &constant_buffer);
 }
