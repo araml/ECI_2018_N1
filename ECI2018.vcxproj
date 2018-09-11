@@ -19,11 +19,15 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="player.cpp" />
+    <ClCompile Include="src\graphics\mesh.cpp" />
     <ClCompile Include="src\graphics\renderer.cpp" />
     <ClCompile Include="src\graphics\window.cpp" />
     <ClCompile Include="src\main.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="player.h" />
+    <ClInclude Include="src\graphics\mesh.h" />
     <ClInclude Include="src\graphics\renderer.h" />
     <ClInclude Include="src\graphics\vertex.h" />
     <ClInclude Include="src\graphics\window.h" />

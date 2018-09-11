@@ -99,88 +99,24 @@ void renderer::init_depth_stencil(window &w) {
     devcon->OMSetRenderTargets(1, &back_buffer, stencil_view);
 }
 
-int num_vert;
-
 void renderer::create_video_buffer() {
-    vertex vertices[] = {
-    
-       { -0.5f, -0.5f, -0.5f, D3DXCOLOR(0.0f, 0.0f, 1.0f, 1.0f) },
-        { -0.5f,  0.5, -0.5f, D3DXCOLOR(0.0f, 1.0f, 0.0f, 1.0f) },
-        {  0.5f,  0.5f, -0.5f, D3DXCOLOR(0.0f, 1.f, 1.0f, 1.0f) },
-        {  0.5f,  -0.5f, -0.5f, D3DXCOLOR(1.0f, 0.f, 0.f, 1.0f) },
-
-        { -0.5f, -0.5f, .5f, D3DXCOLOR(1.f, 0.0f, 1.f, 1.0f) },
-        { -0.5f,  0.5, .5f, D3DXCOLOR(1.0f, 1.f, 0.0f, 1.0f) },
-        { 0.5f,  0.5f, .5f, D3DXCOLOR(1.0f, 1.0f, 1.f, 1.0f) },
-        { 0.5f,  -0.5f, .5f, D3DXCOLOR(0.f, 0.f, 0.f, 1.0f) },
-   
-    };
-
-    WORD indices[] = {
-         0, 1, 2,
-         0, 2, 3,
-         
-         5, 0, 4,
-         5, 1, 0,
-         // Right face
-         3, 2, 6,
-         3, 6, 7,
-
-         6, 4, 7,
-         6, 5, 4,
-
-         1, 5, 6,
-         1, 6, 2,
-
-         0, 4, 7,
-         0, 7, 3,
-   };
-
-    num_vert = sizeof(indices) / sizeof(WORD);
-
-    D3D11_BUFFER_DESC index_buffer_descriptor;
-    ZeroMemory(&index_buffer_descriptor, sizeof(index_buffer_descriptor));
-    index_buffer_descriptor.Usage = D3D11_USAGE_DEFAULT;
-    index_buffer_descriptor.ByteWidth = sizeof(indices);
-    index_buffer_descriptor.BindFlags = D3D11_BIND_INDEX_BUFFER;
-    index_buffer_descriptor.CPUAccessFlags = 0;
-    index_buffer_descriptor.MiscFlags = 0;
-
-    ID3D11Buffer *index_buffer;
-    D3D11_SUBRESOURCE_DATA index_data;
-    index_data.pSysMem = indices;
-    dev->CreateBuffer(&index_buffer_descriptor, &index_data, &index_buffer);
-    devcon->IASetIndexBuffer(index_buffer, DXGI_FORMAT_R16_UINT, 0);
-
     D3D11_BUFFER_DESC buffer_descriptor;
+                                        
     ZeroMemory(&buffer_descriptor, sizeof(buffer_descriptor));
-
-    buffer_descriptor.Usage = D3D11_USAGE_DYNAMIC;                
-    buffer_descriptor.ByteWidth = sizeof(vertices);             
-    buffer_descriptor.BindFlags = D3D11_BIND_VERTEX_BUFFER;     
-    buffer_descriptor.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;    
-
-    check_err(dev->CreateBuffer(&buffer_descriptor, nullptr, &video_buffer));
-
-    D3D11_MAPPED_SUBRESOURCE ms;
-    check_err(devcon->Map(video_buffer, NULL, D3D11_MAP_WRITE_DISCARD, NULL, &ms));
-    memcpy(ms.pData, vertices, sizeof(vertices));
-    devcon->Unmap(video_buffer, NULL);
 
     buffer_descriptor.Usage = D3D11_USAGE_DEFAULT;
     buffer_descriptor.ByteWidth = sizeof(wvp);
     buffer_descriptor.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
     buffer_descriptor.CPUAccessFlags = 0;
-    check_err(dev->CreateBuffer(&buffer_descriptor, nullptr, &constant_buffer));
-   
+    check_err(dev->CreateBuffer(&buffer_descriptor, nullptr, &constant_buffer));  
 }
 
 renderer::~renderer() {
     vertex_shader->Release();
     pixel_shader->Release();
     layout->Release();
-    video_buffer->Release();
-    vertex_buffer->Release();
+  //  video_buffer->Release();
+  //  vertex_buffer->Release();
     pixel_buffer->Release();
     swap_chain->Release();
     back_buffer->Release();
@@ -193,14 +129,16 @@ void renderer::clear() {
     devcon->ClearDepthStencilView(stencil_view, D3D11_CLEAR_DEPTH , 1.0f, 0);
 }
 
-void renderer::render() {
+void renderer::render(mesh &m) {
     update();
 
     UINT stride = sizeof(vertex);
     UINT offset = 0;
-    devcon->IASetVertexBuffers(0, 1, &video_buffer, &stride, &offset);
+    //devcon->IASetVertexBuffers(0, 1, &video_buffer, &stride, &offset);
+    devcon->IASetVertexBuffers(0, 1, &m.vertex_buffer, &stride, &offset);
+    //devcon->IASetIndexBuffer(m.index_buffer, DXGI_FORMAT_R16_UINT, 0);
     devcon->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-    devcon->DrawIndexed(num_vert, 0, 0);
+    devcon->DrawIndexed(m.num_verts, 0, 0); //m.indices.size(), 0, 0);
 }
 
 void renderer::present() {
@@ -215,16 +153,8 @@ void renderer::update() {
 
     DirectX::XMMATRIX world = DirectX::XMMatrixRotationY(rotation);
 
-
-    auto eye = XMVectorSet(0.0f, 1.0f, -3.0f, 0.0f);
-    ///////////////**************new**************////////////////////
-    auto at = XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f);
-    auto up = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
-
     //Set the View matrix
-    auto camera = XMMatrixLookAtLH(eye, at, up);
-    auto projection = XMMatrixPerspectiveFovLH(XM_PIDIV2, (float)640 / 480, .01f, 100.0f);
-
+    auto projection = XMMatrixPerspectiveFovLH(XM_PIDIV4, (float)640 / 480, .01f, 100.0f);
 
 
     wvp buffer;

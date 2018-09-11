@@ -6,6 +6,7 @@
 #include <d3dx11.h>
 #include <d3dx10.h>
 
+#include <mesh.h>
 #include <window.h>
 #include <cstdio>
 #include <comdef.h>
@@ -32,9 +33,13 @@ public:
     renderer(window &w);
     ~renderer();
     void present();
-    void render();
+    void render(mesh &m);
     void clear();
     void update();
+    void update_camera(DirectX::XMMATRIX camera) { this->camera = camera;  }
+
+    ID3D11Device *get_device() { return dev; }
+    ID3D11DeviceContext *get_device_context() { return devcon;  }
 
 private:
     void init_pipeline(window &w);
@@ -54,8 +59,8 @@ private:
     ID3D11DepthStencilView *stencil_view;
     ID3D11Texture2D *stencil_buffer;
 
-    DirectX::XMVECTOR camera; 
     ID3D11Buffer* constant_buffer;
     float rotation{ 0.01f };
+    DirectX::XMMATRIX camera;
 };
 
