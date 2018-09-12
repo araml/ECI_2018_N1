@@ -134,11 +134,11 @@ void renderer::render(mesh &m) {
 
     UINT stride = sizeof(vertex);
     UINT offset = 0;
-    //devcon->IASetVertexBuffers(0, 1, &video_buffer, &stride, &offset);
+    //devcon->IASetVertexBuffers(0, 1, &video_buffer, &stride, &offset); 
+    devcon->IASetIndexBuffer(m.index_buffer, DXGI_FORMAT_R16_UINT, 0);
     devcon->IASetVertexBuffers(0, 1, &m.vertex_buffer, &stride, &offset);
-    //devcon->IASetIndexBuffer(m.index_buffer, DXGI_FORMAT_R16_UINT, 0);
     devcon->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-    devcon->DrawIndexed(m.num_verts, 0, 0); //m.indices.size(), 0, 0);
+    devcon->DrawIndexed(m.indices.size(), 0, 0); //m.indices.size(), 0, 0);
 }
 
 void renderer::present() {

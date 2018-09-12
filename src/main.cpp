@@ -53,8 +53,11 @@ int main() {
     renderer r(w);
 
     using fps = duration<long, std::ratio<1, 60>>; // Define 1/60th of a second
-    //data/teapot.obj
-    mesh m("data/cube.obj", r.get_device(), r.get_device_context());
+    //  data/cube.obj data/bunny.obj
+    //# OBJ file format with ext.obj
+    //    # vertex count = 2503
+    //    # face count = 4968
+    mesh m("data/bunny.obj", r.get_device(), r.get_device_context());
     // main loop
     while (true) {
         time_point<steady_clock> t_new = steady_clock::now();
